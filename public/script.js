@@ -30,7 +30,17 @@ socket.on("room list", (roomMap) => {
       joinRoom();
     };
 
+    const btn = document.createElement('button');
+    btn.textContent = 'Delete';
+    btn.disabled = room === 'Global Chat';
+    btn.onclick = () => {
+      if (confirm(`Delete room "${room}"?`)) {
+        socket.emit('delete room', room);
+      }
+    };
+
     liEl.appendChild(roomNameSpan);
+    liEl.appendChild(btn);
     roomListEl.appendChild(liEl);
   }
 });
@@ -56,6 +66,16 @@ socket.on("join room success", (msg, roomName) => {
   pEl.textContent = msg;
   chatBoxEl.appendChild(pEl);
   chatBoxEl.scrollTop = chatBoxEl.scrollHeight;
+});
+
+socket.on('room deleted', (deletedRoomName) => {
+  if (roomEl.textContent === deletedRoomName) {
+    roomEl.textContent = 'Global Chat';
+    chatBoxEl.textContent = '';
+    const pEl = document.createElement('p');
+    pEl.textContent = 'The room was deleted. You are now in Global Chat.';
+    chatBoxEl.appendChild(pEl);
+  }
 });
 
 function sendMessage() {
