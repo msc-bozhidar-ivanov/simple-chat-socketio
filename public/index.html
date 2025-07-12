@@ -1,24 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Chat App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-</head>
-<body>
-  <div>
-    <h1>Chat App</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+
+  <body>
     <div>
+      <h1>Chat App</h1>
       <div>
-        <div id="chat-box" style="border: 1px solid #ccc; overflow-y:auto; height: 400px;"></div>
         <div>
-          <button onclick="">Send</button>
+          <div
+            id="chat-box"
+            style="border: 1px solid #ccc; overflow-y: auto; height: 400px"
+          ></div>
+          <div>
+            <input id="user" placeholder="Name" />
+            <input id="text" placeholder="Message" />
+            <button onclick="sendMessage()">Send</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
-</body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+  </body>
 </html>
