@@ -14,45 +14,110 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Track rooms
+const rooms = new Map(); // roomName -> Set(socketId)
+rooms.set("Global Chat", new Set());
+
+function updateRoomList() {
+  const roomMap = {};
+  for (const [room, sockets] of rooms.entries()) {
+    roomMap[room] = sockets.size;
+  }
+  io.emit("room list", roomMap);
+}
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // Default to global chat
-  const GLOBAL_ROOM = "global";
-  socket.join(GLOBAL_ROOM);
-  socket.data.room = GLOBAL_ROOM;
+  // Default join Global Chat
+  socket.join("Global Chat");
+  rooms.get("Global Chat").add(socket.id);
 
+  // Global chat message
   socket.on("send message", (msg) => {
-    const room = socket.data.room || GLOBAL_ROOM;
-
-    io.to(room).emit("send message", {
+    io.to("Global Chat").emit("send message", {
       username: msg.username,
-      message: msg.message,
+      message: msg.message
     });
   });
 
+  // Room chat message
+  socket.on("send room message", (msg) => {
+    if (msg.room && rooms.has(msg.room)) {
+      io.to(msg.room).emit("send room message", {
+        username: msg.username,
+        message: msg.message
+      });
+    }
+  });
+
+  // Join room request
   socket.on("join room request", (roomName) => {
     if (!roomName) return;
 
-    const currentRoom = socket.data.room || GLOBAL_ROOM;
+    let prevRoom;
+    for (const [room, members] of rooms.entries()) {
+      if (members.has(socket.id)) {
+        prevRoom = room;
+        break;
+      }
+    }
 
-    // Leave current room
-    socket.leave(currentRoom);
+    if (prevRoom) {
+      rooms.get(prevRoom).delete(socket.id);
+      socket.leave(prevRoom);
+    }
 
-    // Join new room
+    if (!rooms.has(roomName)) {
+      rooms.set(roomName, new Set());
+    }
+
+    rooms.get(roomName).add(socket.id);
     socket.join(roomName);
-    socket.data.room = roomName;
 
     socket.emit(
       "join room success",
       `You successfully joined room: ${roomName}`,
       roomName
     );
+    updateRoomList();
   });
 
+  // Delete room request
+  socket.on("delete room", (roomName) => {
+    if (!roomName || roomName === "Global Chat") return;
+    if (!rooms.has(roomName)) return;
+
+    const socketIds = rooms.get(roomName);
+    for (const sockId of socketIds) {
+      const sock = io.sockets.sockets.get(sockId);
+      if (sock) {
+        rooms.get("Global Chat").add(sockId);
+        sock.leave(roomName);
+        sock.join("Global Chat");
+        sock.emit("room deleted", roomName);
+        sock.emit(
+          "join room success",
+          "You are now in Global Chat",
+          "Global Chat"
+        );
+      }
+    }
+
+    rooms.delete(roomName);
+    updateRoomList();
+  });
+
+  // Disconnect
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+    for (const [room, members] of rooms.entries()) {
+      members.delete(socket.id);
+    }
+    updateRoomList();
   });
+
+  updateRoomList();
 });
 
 server.listen(PORT, () => {

@@ -12,16 +12,22 @@
       <h5 id="room"></h5>
       <div>
         <div>
+            <h5>Rooms <small id="room"></small></h5>
+            <ul id="room-list" style="max-height: 300px; overflow-y:auto;"></ul>
+    
+            <div>
+              <input id="room-name" type="text" placeholder="Enter room name" />
+              <button onclick="joinRoom()">Join/Create Room</button>
+            </div>
+
+        </div>
+
+        <div>
           <div
             id="chat-box"
             style="border: 1px solid #ccc; overflow-y: auto; height: 400px"
           ></div>
           <div>
-            <input id="room-name" type="text" placeholder="Enter your room" />
-            <button onclick="joinRoom()">Join a room</button>
-          </div>
-          <div>
-            <input id="user" placeholder="Name" />
             <input id="text" placeholder="Message" />
             <button onclick="sendMessage()">Send</button>
           </div>
