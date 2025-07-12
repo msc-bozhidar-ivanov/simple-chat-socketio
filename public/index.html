@@ -9,12 +9,17 @@
   <body>
     <div>
       <h1>Chat App</h1>
+      <h5 id="room"></h5>
       <div>
         <div>
           <div
             id="chat-box"
             style="border: 1px solid #ccc; overflow-y: auto; height: 400px"
           ></div>
+          <div>
+            <input id="room-name" type="text" placeholder="Enter your room" />
+            <button onclick="joinRoom()">Join a room</button>
+          </div>
           <div>
             <input id="user" placeholder="Name" />
             <input id="text" placeholder="Message" />
