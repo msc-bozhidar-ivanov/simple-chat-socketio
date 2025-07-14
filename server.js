@@ -14,7 +14,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Track rooms
+// Track users and rooms
+const users = new Map(); // socketId -> { userName, room }
 const rooms = new Map(); // roomName -> Set(socketId)
 rooms.set("Global Chat", new Set());
 
@@ -26,18 +27,35 @@ function updateRoomList() {
   io.emit("room list", roomMap);
 }
 
+function broadcastUsers() {
+  const userList = Array.from(users.values())
+    .map((u) => u.userName)
+    .filter(Boolean);
+  io.emit("users online", userList);
+}
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // Default join Global Chat
-  socket.join("Global Chat");
+  // Assign default user data
+  users.set(socket.id, { userName: null, room: "Global Chat" });
   rooms.get("Global Chat").add(socket.id);
+  socket.join("Global Chat");
+
+  // New user sends username
+  socket.on("new user", (userName) => {
+    const userData = users.get(socket.id);
+    userData.userName = userName || "Anonymous";
+    users.set(socket.id, userData);
+    broadcastUsers();
+    updateRoomList();
+  });
 
   // Global chat message
   socket.on("send message", (msg) => {
     io.to("Global Chat").emit("send message", {
       username: msg.username,
-      message: msg.message
+      message: msg.message,
     });
   });
 
@@ -46,7 +64,7 @@ io.on("connection", (socket) => {
     if (msg.room && rooms.has(msg.room)) {
       io.to(msg.room).emit("send room message", {
         username: msg.username,
-        message: msg.message
+        message: msg.message,
       });
     }
   });
@@ -55,15 +73,13 @@ io.on("connection", (socket) => {
   socket.on("join room request", (roomName) => {
     if (!roomName) return;
 
-    let prevRoom;
-    for (const [room, members] of rooms.entries()) {
-      if (members.has(socket.id)) {
-        prevRoom = room;
-        break;
-      }
-    }
+    const userData = users.get(socket.id);
+    if (!userData) return;
 
-    if (prevRoom) {
+    const prevRoom = userData.room || "Global Chat";
+
+    // Leave old room
+    if (rooms.has(prevRoom)) {
       rooms.get(prevRoom).delete(socket.id);
       socket.leave(prevRoom);
     }
@@ -75,12 +91,16 @@ io.on("connection", (socket) => {
     rooms.get(roomName).add(socket.id);
     socket.join(roomName);
 
+    userData.room = roomName;
+    users.set(socket.id, userData);
+
     socket.emit(
       "join room success",
       `You successfully joined room: ${roomName}`,
       roomName
     );
     updateRoomList();
+    broadcastUsers();
   });
 
   // Delete room request
@@ -90,34 +110,48 @@ io.on("connection", (socket) => {
 
     const socketIds = rooms.get(roomName);
     for (const sockId of socketIds) {
-      const sock = io.sockets.sockets.get(sockId);
-      if (sock) {
+      const userData = users.get(sockId);
+      if (userData) {
+        userData.room = "Global Chat";
+        users.set(sockId, userData);
         rooms.get("Global Chat").add(sockId);
-        sock.leave(roomName);
-        sock.join("Global Chat");
-        sock.emit("room deleted", roomName);
-        sock.emit(
-          "join room success",
-          "You are now in Global Chat",
-          "Global Chat"
-        );
+
+        const sock = io.sockets.sockets.get(sockId);
+        if (sock) {
+          sock.leave(roomName);
+          sock.join("Global Chat");
+          sock.emit("room deleted", roomName);
+          sock.emit(
+            "join room success",
+            "You are now in Global Chat",
+            "Global Chat"
+          );
+        }
       }
     }
 
     rooms.delete(roomName);
     updateRoomList();
+    broadcastUsers();
   });
 
   // Disconnect
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
-    for (const [room, members] of rooms.entries()) {
-      members.delete(socket.id);
+    const userData = users.get(socket.id);
+    if (userData) {
+      const room = userData.room || "Global Chat";
+      if (rooms.has(room)) {
+        rooms.get(room).delete(socket.id);
+      }
+      users.delete(socket.id);
+      broadcastUsers();
+      updateRoomList();
     }
-    updateRoomList();
   });
 
   updateRoomList();
+  broadcastUsers();
 });
 
 server.listen(PORT, () => {

@@ -4,6 +4,7 @@ const textEl = document.getElementById("text");
 const chatBoxEl = document.getElementById("chat-box");
 const roomNameEl = document.getElementById("room-name");
 const roomEl = document.getElementById("room");
+const usersOnlineEl = document.getElementById("users-online");
 const roomListEl = document.getElementById("room-list");
 
 const userName = prompt("Enter your name") || "Anonymous";
@@ -30,12 +31,12 @@ socket.on("room list", (roomMap) => {
       joinRoom();
     };
 
-    const btn = document.createElement('button');
-    btn.textContent = 'Delete';
-    btn.disabled = room === 'Global Chat';
+    const btn = document.createElement("button");
+    btn.textContent = "Delete";
+    btn.disabled = room === "Global Chat";
     btn.onclick = () => {
       if (confirm(`Delete room "${room}"?`)) {
-        socket.emit('delete room', room);
+        socket.emit("delete room", room);
       }
     };
 
@@ -68,12 +69,12 @@ socket.on("join room success", (msg, roomName) => {
   chatBoxEl.scrollTop = chatBoxEl.scrollHeight;
 });
 
-socket.on('room deleted', (deletedRoomName) => {
+socket.on("room deleted", (deletedRoomName) => {
   if (roomEl.textContent === deletedRoomName) {
-    roomEl.textContent = 'Global Chat';
-    chatBoxEl.textContent = '';
-    const pEl = document.createElement('p');
-    pEl.textContent = 'The room was deleted. You are now in Global Chat.';
+    roomEl.textContent = "Global Chat";
+    chatBoxEl.textContent = "";
+    const pEl = document.createElement("p");
+    pEl.textContent = "The room was deleted. You are now in Global Chat.";
     chatBoxEl.appendChild(pEl);
   }
 });
