@@ -51,20 +51,40 @@ io.on("connection", (socket) => {
     updateRoomList();
   });
 
+  // Typing event
+  socket.on("typing", (isTyping) => {
+    const userData = users.get(socket.id);
+    if (!userData) return;
+    const room = userData.room || "Global Chat";
+    socket.to(room).emit("typing", { userName: userData.userName, isTyping });
+  });
+
   // Global chat message
   socket.on("send message", (msg) => {
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     io.to("Global Chat").emit("send message", {
       username: msg.username,
       message: msg.message,
+      time: timestamp,
     });
   });
 
   // Room chat message
   socket.on("send room message", (msg) => {
     if (msg.room && rooms.has(msg.room)) {
+      const timestamp = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
       io.to(msg.room).emit("send room message", {
         username: msg.username,
         message: msg.message,
+        time: timestamp,
       });
     }
   });
