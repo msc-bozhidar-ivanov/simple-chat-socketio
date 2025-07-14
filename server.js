@@ -84,10 +84,12 @@ io.on("connection", (socket) => {
       socket.leave(prevRoom);
     }
 
+    // Create new room if doesn't exist
     if (!rooms.has(roomName)) {
       rooms.set(roomName, new Set());
     }
 
+    // Join new room
     rooms.get(roomName).add(socket.id);
     socket.join(roomName);
 

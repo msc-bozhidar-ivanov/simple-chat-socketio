@@ -14,6 +14,7 @@ socket.on("users online", (users) => {
   usersOnlineEl.textContent = "";
   users.forEach((user) => {
     const liEl = document.createElement("li");
+    liEl.className = "list-group-item";
     liEl.textContent = user;
     usersOnlineEl.appendChild(liEl);
   });
@@ -23,6 +24,9 @@ socket.on("room list", (roomMap) => {
   roomListEl.textContent = "";
   for (const [room, count] of Object.entries(roomMap)) {
     const liEl = document.createElement("li");
+    liEl.className =
+      "list-group-item d-flex justify-content-between align-items-center";
+
     const roomNameSpan = document.createElement("span");
     roomNameSpan.textContent = `${room} (${count})`;
     roomNameSpan.style.cursor = "pointer";
@@ -32,6 +36,7 @@ socket.on("room list", (roomMap) => {
     };
 
     const btn = document.createElement("button");
+    btn.className = "btn btn-sm btn-danger";
     btn.textContent = "Delete";
     btn.disabled = room === "Global Chat";
     btn.onclick = () => {
