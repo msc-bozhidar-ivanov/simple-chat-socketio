@@ -1,13 +1,12 @@
 import {
   addUser,
   setUserName,
-  broadcastUsers,
-  updateRoomList,
   getUser,
-  joinRoom,
-  deleteRoom,
   removeUser,
-} from "./roomManager.js";
+  broadcastUsers,
+} from "./userManager.js";
+
+import { joinRoom, deleteRoom, updateRoomList } from "./roomManager.js";
 
 import { formatTimestamp } from "./messageUtils.js";
 
