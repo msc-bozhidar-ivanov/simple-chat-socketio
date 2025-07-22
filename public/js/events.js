@@ -1,8 +1,7 @@
-import { socket, getCurrentUser } from "./socket.js";
+import { socket, getCurrentUser, getCurrentRoom } from "./socket.js";
 
 const textEl = document.getElementById("text");
 const roomNameEl = document.getElementById("room-name");
-const roomEl = document.getElementById("room");
 const sendBtnEl = document.getElementById("send-btn");
 const joinBtnEl = document.getElementById("join-btn");
 
@@ -25,14 +24,12 @@ export function sendMessage() {
   const message = textEl.value.trim();
   if (!message) return;
 
+  const currentRoom = getCurrentRoom();
+
   const payload = {
     username: getCurrentUser(),
     message,
-    time: new Date().toLocaleTimeString(),
-    room:
-      roomEl.textContent.trim() !== "Global Chat"
-        ? roomEl.textContent.trim()
-        : null,
+    room: currentRoom !== "Global Chat" ? currentRoom : null,
   };
 
   socket.emit(payload.room ? "send room message" : "send message", payload);

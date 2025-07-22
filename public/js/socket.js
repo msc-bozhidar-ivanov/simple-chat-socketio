@@ -3,17 +3,23 @@ import {
   renderRoomList,
   renderUsersOnline,
   updateRoomHeader,
+  clearChat,
   showTypingIndicator,
   showRoomDeleted,
 } from "./ui.js";
 
 export let socket = null;
 let currentUserName = "";
+let currentRoom = "Global Chat";
 
-export function initSocket(userName) {
+export function initSocket(userName, onReady) {
   socket = io();
   currentUserName = userName;
-  socket.emit("new user", userName);
+
+  socket.on("connect", () => {
+    socket.emit("new user", userName);
+    if (onReady) onReady();
+  });
 
   socket.on("typing", ({ userName, isTyping }) => {
     showTypingIndicator(userName, isTyping);
@@ -23,19 +29,33 @@ export function initSocket(userName) {
   socket.on("room list", renderRoomList);
   socket.on("send message", renderMessage);
   socket.on("send room message", renderMessage);
-
-  socket.on("join room success", (msg, roomName) => {
-    updateRoomHeader(roomName);
-    renderMessage({
-      username: "System",
-      message: msg,
-      time: new Date().toLocaleTimeString(),
-    });
+  socket.on("chat history", (msgs) => {
+    clearChat();
+    msgs.forEach(renderMessage);
   });
 
-  socket.on("room deleted", showRoomDeleted);
+  socket.on("join room success", (msg) => {
+    currentRoom = msg.roomName;
+    updateRoomHeader(currentRoom);
+    renderMessage(msg); // confirmation message
+  });
+
+  socket.on("room deleted", (room) => {
+    if (currentRoom === room) {
+      currentRoom = "Global Chat";
+    }
+    showRoomDeleted(room);
+  });
 }
 
 export function getCurrentUser() {
   return currentUserName;
+}
+
+export function getCurrentRoom() {
+  return currentRoom;
+}
+
+export function deleteRoom(room) {
+  socket.emit("delete room", room);
 }

@@ -1,10 +1,11 @@
-import { rooms, updateRoomList } from "./roomManager.js";
+import { User } from "../db/models/user.js";
+import { updateRoomList } from "./roomManager.js";
 
 /* ------------- in‑memory store ------------- */
 const users = new Map(); // socketId → { userName, room }
 
 /* ------------- broadcast helpers ---------- */
-export function broadcastUsers(io) {
+export async function broadcastUsers(io) {
   const names = Array.from(users.values())
     .map((u) => u.userName)
     .filter(Boolean);
@@ -12,42 +13,51 @@ export function broadcastUsers(io) {
 }
 
 /* ------------- user operations ------------- */
-export function addUser(socketId) {
-  users.set(socketId, { userName: null, room: "Global Chat" });
-  rooms.get("Global Chat").add(socketId); // default room
+export async function addUser(socketId) {
+  const user = await User.create({
+    socketId,
+    userName: null,
+    room: "Global Chat",
+  });
+
+  users.set(socketId, user.toObject());
 }
 
-export function setUserName(socketId, userName = "Anonymous") {
+export async function setUserName(socketId, userName = "Anonymous") {
   const user = users.get(socketId);
   if (user) {
     user.userName = userName;
+    await User.updateOne({ socketId }, { userName });
     users.set(socketId, user);
   }
 }
 
-export function getUser(socketId) {
-  return users.get(socketId);
+export async function getUser(socketId) {
+  if (users.has(socketId)) return users.get(socketId);
+
+  const user = await User.findOne({ socketId }).lean();
+  if (user) users.set(socketId, user);
+  return user;
 }
 
-export function setUserRoom(socketId, roomName) {
+export async function setUserRoom(socketId, roomName) {
   const user = users.get(socketId);
   if (user) {
     user.room = roomName;
+    await User.updateOne({ socketId }, { room: roomName });
     users.set(socketId, user);
   }
 }
 
 /* remove user and clean maps */
-export function removeUser(io, socketId) {
+export async function removeUser(io, socketId) {
   const user = users.get(socketId);
   if (!user) return;
 
-  const { room } = user;
-  if (rooms.has(room)) rooms.get(room).delete(socketId);
-
+  await User.deleteOne({ socketId });
   users.delete(socketId);
-  broadcastUsers(io);
-  updateRoomList(io);
+  await broadcastUsers(io);
+  await updateRoomList(io);
 }
 
 /* ------------- exports ------------- */

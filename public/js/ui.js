@@ -1,4 +1,4 @@
-import { socket } from "./socket.js";
+import { deleteRoom } from "./socket.js";
 import { joinRoom } from "./events.js";
 
 const chatBoxEl = document.getElementById("chat-box");
@@ -53,19 +53,18 @@ export function renderRoomList(roomMap) {
     delBtn.disabled = room === "Global Chat";
     delBtn.onclick = () => {
       if (confirm(`Delete room "${room}"?`)) {
-        socket.emit("delete room", room);
+        deleteRoom(room);
       }
     };
 
     li.appendChild(nameSpan);
-    li.appendChild(delBtn);
+    if (!(room === "Global Chat")) li.appendChild(delBtn);
     roomListEl.appendChild(li);
   }
 }
 
 export function updateRoomHeader(roomName) {
   roomEl.textContent = roomName;
-  chatBoxEl.innerHTML = "";
 }
 
 export function showRoomDeleted(deletedRoom) {
@@ -75,5 +74,9 @@ export function showRoomDeleted(deletedRoom) {
     const p = document.createElement("p");
     p.textContent = "The room was deleted. You are now in Global Chat.";
     chatBoxEl.appendChild(p);
-  }
+  } 
+}
+
+export function clearChat() {
+  chatBoxEl.innerHTML = "";
 }
