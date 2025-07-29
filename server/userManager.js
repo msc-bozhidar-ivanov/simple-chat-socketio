@@ -1,5 +1,4 @@
 import { User } from "../db/models/user.js";
-import { updateRoomList } from "./roomManager.js";
 
 /* ------------- in‑memory store ------------- */
 const users = new Map(); // socketId → { userName, room }
@@ -57,7 +56,6 @@ export async function removeUser(io, socketId) {
   await User.deleteOne({ socketId });
   users.delete(socketId);
   await broadcastUsers(io);
-  await updateRoomList(io);
 }
 
 /* ------------- exports ------------- */

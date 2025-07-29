@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { connectDB } from "../db/db.js";
 
 import { handleSocketConnection } from "./socketHandler.js";
+import { config } from "../config/config.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +30,6 @@ io.on("connection", (socket) => {
 
 await connectDB();
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+server.listen(config.port, () => {
+  console.log(`Server running at http://localhost:${config.port}`);
 });

@@ -1,11 +1,9 @@
 import mongoose from "mongoose";
-
-// hard coded
-const mongoDB = "mongodb://localhost:27017/simple-chat";
+import { config } from "../config/config.js";
 
 export async function connectDB() {
   try {
-    await mongoose.connect(mongoDB);
+    await mongoose.connect(config.mongoUri);
     console.log("MongoDB connected");
   } catch (err) {
     console.error("Mongo connection error:", err);
